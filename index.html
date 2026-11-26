@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Feedback Mood Checker</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#fffef5;--tx:#111;--mu:#444;--bd:#222;--ac:#ddd;--pos:#1a7f1a;--neu:#b36b00;--neg:#c00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1d1d;--tx:#f2f2f2;--mu:#ccc;--bd:#ddd;--ac:#444;--pos:#6fdc6f;--neu:#ffb347;--neg:#ff7777}}
+:root[data-theme="dark"]{--bg:#1d1d1d;--tx:#f2f2f2;--mu:#ccc;--bd:#ddd;--ac:#444;--pos:#6fdc6f;--neu:#ffb347;--neg:#ff7777}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.5 "Comic Sans MS","Chalkboard SE","Comic Neue",cursive,sans-serif}
+main{max-width:640px;margin:0 auto;padding:14px}
+h1{font-size:1.5rem;text-align:center;text-decoration:underline;margin:6px 0}
+h2{font-size:1.1rem;margin:0 0 8px;text-decoration:underline}
+.sub{color:var(--mu);font-size:.9rem;margin:4px 0 12px;text-align:center}
+.card{border:2px solid var(--bd);padding:10px;margin-bottom:14px}
+textarea{width:100%;min-height:80px;border:2px solid var(--bd);padding:6px;font:inherit;background:var(--bg);color:var(--tx)}
+button{background:var(--ac);color:var(--tx);border:2px solid var(--bd);padding:5px 12px;font:inherit;margin-top:8px}
+.chips{display:block;margin-top:6px}.chips p{margin:4px 0}
+.chip{display:block;width:100%;text-align:left;font-size:.85rem;margin:3px 0;padding:3px 8px}
+.res{font-size:1.2rem;font-weight:bold;margin:10px 0 6px}
+.bar{display:flex;align-items:center;gap:6px;font-size:.9rem;margin:2px 0}.bar b{width:70px;font-weight:normal}
+.bar i{height:12px;display:block}.bar span{flex:1;border:1px solid var(--bd)}
+.Positive{color:var(--pos)}.Neutral{color:var(--neu)}.Negative{color:var(--neg)}
+.stats{display:block;font-size:.95rem}.stats div{margin:3px 0}.stats b{font-size:1.05rem}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.9rem;text-align:center}td,th{border:1px solid var(--bd);padding:4px}
+ul{padding-left:20px;margin:6px 0}small{color:var(--mu)}
+</style></head><body><main>
+<h1>Feedback Mood Checker</h1>
+<p class="sub">A School Project on AI (NLP)<br>Made by: Naseem. N, E. Niranchan, Pranish Bala, Prajeeth<br>Class XII-C1, Maharishi International Residential School</p>
+
+<div class="card"><h2>1. Aim</h2>
+<p>This computer program reads a school feedback comment and tells if it is Positive, Neutral or Negative. It helps the school see what students like and what needs to be improved.</p></div>
+
+<div class="card"><h2>2. Try it</h2>
+<p>Type a comment below and press Analyze.</p>
+<textarea id="inp" placeholder="Example: The school bus is too slow"></textarea>
+<button id="go">Analyze</button>
+<div class="chips" id="chips"><p>Or click an example:</p></div>
+<div id="out"></div></div>
+
+<div class="card"><h2>3. Summary for Management</h2>
+<p>Write one comment on each line.</p>
+<textarea id="batch"></textarea><button id="sum">Summarise</button><div id="sumout"></div></div>
+
+<div class="card"><h2>4. How accurate is it?</h2><div class="stats" id="stats"></div>
+<div class="scroll"><table id="cm"></table></div>
+<small>Rows = real answer, columns = computer answer. We used 300 made-up comments (100 each), so the accuracy is higher than it would be with real comments.</small></div>
+
+<div class="card"><h2>5. How it works</h2>
+<ol><li>Clean the text (small letters, no numbers or symbols).</li><li>TF-IDF changes words into numbers.</li><li>Logistic Regression picks Positive, Neutral or Negative.</li><li>A teacher reads the Negative comments before any decision.</li></ol>
+<small>This is only a guide. It is never used to find or punish a student. SDG 4: Quality Education.</small></div>
+</main>
+<script>
+const L=["Negative","Neutral","Positive"];
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(42),pick=a=>a[Math.floor(R()*a.length)];
+const T=["the teaching","our maths teacher","the science classes","the AI lab sessions","the English lessons","the library","the classrooms","the computer lab","the hostel rooms","the playground","the canteen food","the mess food","the snacks","the dining hall","the school bus","the transport service","the bus timing","the annual day","the sports day","the science exhibition","the cultural event"];
+const P={Positive:["is really good","is excellent","is very helpful","is great and we enjoy it","is well organised","has improved a lot","is clean and comfortable","is amazing","makes learning fun","is the best part of school"],
+Negative:["is not good","is very poor","is too slow","needs urgent improvement","is badly managed","is dirty and uncomfortable","is not helpful at all","is disappointing","has become worse","is the worst part of school"],
+Neutral:["is okay","is average","is fine, nothing special","is the same as last year","is neither good nor bad","is acceptable","is held once a week","is as expected","is normal","has both good and bad points"]};
+const S=["","In my opinion, ","Honestly, ","I feel that ","To be frank, "],E=["",".","  this term.",", please look into it."];
+const data=[];
+for(const l of L){const seen=new Set();while(seen.size<100){let s=pick(S)+pick(T)+" "+pick(P[l])+pick(E);s=s.replace(/\s+/g," ").trim();s=s[0].toUpperCase()+s.slice(1);seen.add(s)}seen.forEach(t=>data.push({t,y:L.indexOf(l)}))}
+const clean=s=>s.toLowerCase().replace(/\d+/g," ").replace(/[^a-z\s]/g," ").replace(/\s+/g," ").trim();
+const grams=s=>{const w=clean(s).split(" ").filter(Boolean),g=[...w];for(let i=0;i<w.length-1;i++)g.push(w[i]+" "+w[i+1]);return g};
+// split 80/20 per class
+const tr=[],te=[];L.forEach((_,c)=>{const d=data.filter(x=>x.y===c);d.sort(()=>R()-.5);d.forEach((x,i)=>(i<80?tr:te).push(x))});
+const vocab=new Map(),df=[];
+tr.forEach(d=>{new Set(grams(d.t)).forEach(g=>{if(!vocab.has(g)){vocab.set(g,vocab.size);df.push(0)}df[vocab.get(g)]++})});
+const V=vocab.size,idf=df.map(x=>Math.log((1+tr.length)/(1+x))+1);
+function vec(s){const m={};grams(s).forEach(g=>{if(vocab.has(g)){const i=vocab.get(g);m[i]=(m[i]||0)+1}});let n=0;for(const i in m){m[i]*=idf[i];n+=m[i]*m[i]}n=Math.sqrt(n)||1;for(const i in m)m[i]/=n;return m}
+tr.forEach(d=>d.x=vec(d.t));te.forEach(d=>d.x=vec(d.t));
+const W=L.map(()=>new Float64Array(V)),B=[0,0,0];
+function probs(x){const z=L.map((_,c)=>{let s=B[c];for(const i in x)s+=W[c][i]*x[i];return s}),m=Math.max(...z),e=z.map(v=>Math.exp(v-m)),t=e.reduce((a,b)=>a+b);return e.map(v=>v/t)}
+for(let ep=0;ep<200;ep++){tr.forEach(d=>{const p=probs(d.x);for(let c=0;c<3;c++){const g=p[c]-(d.y===c?1:0);for(const i in d.x)W[c][i]-=2*(g*d.x[i]+1e-4*W[c][i]);B[c]-=.2*g}})}
+const cm=[[0,0,0],[0,0,0],[0,0,0]];let ok=0;
+te.forEach(d=>{const p=probs(d.x),k=p.indexOf(Math.max(...p));cm[d.y][k]++;if(k===d.y)ok++});
+const $=id=>document.getElementById(id);
+const col={Positive:"var(--pos)",Neutral:"var(--neu)",Negative:"var(--neg)"};
+$("stats").innerHTML=`<div>Accuracy: <b>${(ok/te.length*100).toFixed(1)}%</b></div><div>Training comments: <b>${tr.length}</b></div><div>Testing comments: <b>${te.length}</b></div>`;
+$("cm").innerHTML="<tr><th></th>"+L.map(l=>`<th>${l}</th>`).join("")+"</tr>"+cm.map((r,i)=>`<tr><th>${L[i]}</th>${r.map(v=>`<td>${v}</td>`).join("")}</tr>`).join("");
+function predict(s){const p=probs(vec(s)),k=p.indexOf(Math.max(...p));return{l:L[k],c:p[k],p}}
+function esc(s){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+function run(){const s=$("inp").value.trim();if(!s){$("out").innerHTML="";return}
+const r=predict(s);$("out").innerHTML=`<div class="res ${r.l}">${r.l} · ${(r.c*100).toFixed(0)}% confidence</div>`+L.map((l,i)=>`<div class="bar"><b>${l}</b><span><i style="width:${r.p[i]*100}%;background:${col[l]}"></i></span>${(r.p[i]*100).toFixed(0)}%</div>`).join("")}
+$("go").onclick=run;
+const ex=["The library is really good and very helpful","The school bus is too slow and badly managed","The canteen food is average","The computer lab is not good","Sports day was amazing"];
+$("chips").innerHTML+=ex.map(e=>`<button class="chip">${esc(e)}</button>`).join("");
+document.querySelectorAll(".chip").forEach((b,i)=>b.onclick=()=>{$("inp").value=ex[i];run()});
+$("batch").value=ex.join("\n");
+$("sum").onclick=()=>{const rows=$("batch").value.split("\n").map(x=>x.trim()).filter(Boolean).map(t=>({t,...predict(t)}));
+const n=l=>rows.filter(r=>r.l===l).length,neg=rows.filter(r=>r.l==="Negative");
+$("sumout").innerHTML=`<div class="stats" style="margin-top:8px">${["Positive","Neutral","Negative"].map(l=>`<div class="${l}">${l}: <b>${n(l)}</b></div>`).join("")}</div><p><b>For a teacher to review:</b></p>`+(neg.length?"<ul>"+neg.map(r=>`<li>${esc(r.t)} <small>(${(r.c*100).toFixed(0)}%)</small></li>`).join("")+"</ul>":"<small>No negative comments.</small>")};
+$("sum").click();
+</script></body></html>
